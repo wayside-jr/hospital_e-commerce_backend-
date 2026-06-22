@@ -3,30 +3,55 @@ from dotenv import load_dotenv
 import os
 
 from extensions import db, migrate
+from flask_jwt_extended import JWTManager
 
 load_dotenv()
 
-app = Flask(__name__)
+# INIT JWT
+jwt = JWTManager()
 
-# CONFIG
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+def create_app():
+    app = Flask(__name__)
 
-# INIT DB
-db.init_app(app)
-migrate.init_app(app, db)
+    # ======================
+    # CONFIG
+    # ======================
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
-# IMPORT MODELS (important for migrations)
-from models.user import User
+    # JWT config (NEW)
+    app.config["JWT_SECRET_KEY"] = os.getenv("SECRET_KEY")
 
-# IMPORT BLUEPRINT
-from modules.auth.routes import auth_bp
-app.register_blueprint(auth_bp, url_prefix="/auth")
+    # ======================
+    # INIT EXTENSIONS
+    # ======================
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
 
-@app.route("/")
-def home():
-    return {"message": "API running with Supabase"}
+    # ======================
+    # IMPORT MODELS (MIGRATIONS)
+    # ======================
+    from models.user import User
 
+    # ======================
+    # REGISTER BLUEPRINTS
+    # ======================
+    from modules.auth.routes import auth_bp
+    app.register_blueprint(auth_bp, url_prefix="/auth")
+
+    # ======================
+    # BASE ROUTE
+    # ======================
+    @app.route("/")
+    def home():
+        return {"message": "API running with Supabase"}
+
+    return app
+
+
+# RUN APP
 if __name__ == "__main__":
+    app = create_app()
     app.run(debug=True)

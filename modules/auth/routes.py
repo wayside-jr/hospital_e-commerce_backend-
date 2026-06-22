@@ -5,42 +5,123 @@ from modules.auth.service import (
     authenticate_user
 )
 
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    get_jwt_identity
+)
+
 auth_bp = Blueprint("auth", __name__)
 
-
+# =========================
+# 🧾 REGISTER
+# =========================
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    full_name = data.get("full_name")
-    email = data.get("email")
-    password = data.get("password")
+        if not data:
+            return jsonify({"error": "Request body must be JSON"}), 400
 
-    user, error = register_user(full_name, email, password)
+        full_name = data.get("full_name")
+        email = data.get("email")
+        password = data.get("password")
 
-    if error:
-        return jsonify({"error": error}), 400
+        # missing fields check
+        if not full_name or not email or not password:
+            return jsonify({"error": "full_name, email, password are required"}), 400
 
-    return jsonify({"message": "User created successfully"}), 201
+        # empty string check
+        if full_name.strip() == "" or email.strip() == "" or password.strip() == "":
+            return jsonify({"error": "Fields cannot be empty"}), 400
+
+        user, error = register_user(full_name, email, password)
+
+        if error:
+            return jsonify({"error": error}), 400
+
+        return jsonify({
+            "message": "User created successfully",
+            "user": {
+                "id": user.id,
+                "full_name": user.full_name,
+                "email": user.email
+            }
+        }), 201
+
+    except Exception as e:
+        return jsonify({
+            "error": "Server error during registration",
+            "details": str(e)
+        }), 500
 
 
+# =========================
+# 🔑 LOGIN
+# =========================
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    email = data.get("email")
-    password = data.get("password")
+        if not data:
+            return jsonify({"error": "Request body must be JSON"}), 400
 
-    user = authenticate_user(email, password)
+        email = data.get("email")
+        password = data.get("password")
 
-    if not user:
-        return jsonify({"error": "Invalid email or password"}), 401
+        if not email or not password:
+            return jsonify({"error": "email and password are required"}), 400
 
-    return jsonify({
-        "message": "Login successful",
-        "user": {
-            "id": user.id,
-            "full_name": user.full_name,
-            "email": user.email
-        }
-    }), 200
+        if email.strip() == "" or password.strip() == "":
+            return jsonify({"error": "Fields cannot be empty"}), 400
+
+        user = authenticate_user(email, password)
+
+        if not user:
+            return jsonify({"error": "Invalid email or password"}), 401
+
+        access_token = create_access_token(identity=user.id)
+
+        return jsonify({
+            "message": "Login successful",
+            "access_token": access_token,
+            "user": {
+                "id": user.id,
+                "full_name": user.full_name,
+                "email": user.email
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Server error during login",
+            "details": str(e)
+        }), 500
+
+
+# =========================
+# 🔒 PROTECTED ROUTE (/me)
+# =========================
+@auth_bp.route("/me", methods=["GET"])
+@jwt_required()
+def me():
+    try:
+        user_id = get_jwt_identity()
+
+        if not user_id:
+            return jsonify({"error": "Invalid token"}), 401
+
+        return jsonify({
+            "message": "Current user fetched successfully",
+            "user": {
+                "id": user_id
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Server error in protected route",
+            "details": str(e)
+        }), 500
