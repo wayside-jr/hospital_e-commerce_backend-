@@ -113,15 +113,25 @@ def me():
         if not user_id:
             return jsonify({"error": "Invalid token"}), 401
 
+        # 🔥 FETCH USER FROM DATABASE
+        from models.user import User
+
+        user = User.query.get(user_id)
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
         return jsonify({
             "message": "Current user fetched successfully",
             "user": {
-                "id": user_id
+                "id": user.id,
+                "full_name": user.full_name,
+                "email": user.email
             }
         }), 200
 
     except Exception as e:
         return jsonify({
-            "error": "Server error in protected route",
+            "error": "Server error while fetching user",
             "details": str(e)
         }), 500
