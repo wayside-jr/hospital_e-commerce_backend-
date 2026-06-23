@@ -41,6 +41,9 @@ def create_app():
     from modules.auth.routes import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
 
+    from modules.products.routes import product_bp
+    app.register_blueprint(product_bp , url_prefix ="/products")
+
     # ======================
     # BASE ROUTE
     # ======================
