@@ -33,7 +33,7 @@ def create_app():
     # ======================
     # IMPORT MODELS (MIGRATIONS)
     # ======================
-    from models.user import User
+    import models
 
     # ======================
     # REGISTER BLUEPRINTS
