@@ -47,6 +47,9 @@ def create_app():
     from modules.orders.routes import orders_bp
     app.register_blueprint(orders_bp , url_prefix = "/orders")
 
+    from modules.cart.routes import cart_bp
+    app.register_blueprint(cart_bp   ,url_prefix = "/cart") 
+
     # ======================
     # BASE ROUTE
     # ======================
