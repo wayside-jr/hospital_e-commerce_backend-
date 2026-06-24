@@ -32,3 +32,10 @@ class User(db.Model):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+
+    cart = db.relationship(
+    "Cart",
+    back_populates="user",
+    uselist=False,
+    cascade="all, delete-orphan"
+)

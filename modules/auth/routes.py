@@ -82,11 +82,13 @@ def login():
         if not user:
             return jsonify({"error": "Invalid email or password"}), 401
 
-        access_token = create_access_token(identity=user.id)
+        token = create_access_token(
+            identity=str(user.id)
+        )
 
         return jsonify({
             "message": "Login successful",
-            "access_token": access_token,
+            "access_token": token,
             "user": {
                 "id": user.id,
                 "full_name": user.full_name,
