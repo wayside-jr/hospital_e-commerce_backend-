@@ -48,7 +48,8 @@ def create_app():
             r"/*": {
                 "origins": [
                     "http://localhost:5173",
-                    "http://127.0.0.1:5173"
+                    "http://127.0.0.1:5173",
+                    "https://jeremy-enterprises-9nxb.onrender.com"
                 ]
             }
         }
