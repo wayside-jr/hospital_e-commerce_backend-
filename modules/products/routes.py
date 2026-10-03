@@ -219,6 +219,11 @@ def delete(id):
 
 
 
+    except ValueError as e:
+        return jsonify({
+            "error": str(e)
+        }), 409
+
     except Exception as e:
         print("DELETE PRODUCT ERROR:", repr(e))
         return jsonify({

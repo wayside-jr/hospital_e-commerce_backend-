@@ -1,5 +1,6 @@
 from extensions import db
 from models.product import Product
+from models.orderItem import OrderItem
 
 
 def create_product(data):
@@ -80,6 +81,15 @@ def delete_product(product_id):
 
     if not product:
         return None
+
+    existing_order_item = OrderItem.query.filter_by(
+        product_id=product_id
+    ).first()
+
+    if existing_order_item:
+        raise ValueError(
+            "Cannot delete product because it exists in an order history"
+        )
 
     db.session.delete(product)
     db.session.commit()
