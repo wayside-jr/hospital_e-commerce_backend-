@@ -219,7 +219,8 @@ def delete(id):
 
 
 
-    except Exception:
+    except Exception as e:
+        print("DELETE PRODUCT ERROR:", repr(e))
         return jsonify({
             "error": "Unable to delete product"
         }), 500
