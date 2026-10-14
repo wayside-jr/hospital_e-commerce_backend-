@@ -5,6 +5,7 @@ import os
 from extensions import db, migrate
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+from sqlalchemy import event
 
 load_dotenv()
 
@@ -61,6 +62,25 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+
+    
+    with app.app_context():
+        engine = db.engine
+
+        @event.listens_for(engine, "connect")
+        def on_connect(dbapi_connection, connection_record):
+            print("DB POOL | New physical connection created")
+
+        @event.listens_for(engine, "checkout")
+        def on_checkout(
+            dbapi_connection, connection_record, connection_proxy
+        ):
+            print("DB POOL | Connection checked out")
+
+        @event.listens_for(engine, "checkin")
+        def on_checkin(dbapi_connection, connection_record):
+            print("DB POOL | Connection returned")
+
 
     # ======================
     # IMPORT MODELS
