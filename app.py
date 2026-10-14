@@ -1,6 +1,7 @@
 from flask import Flask
 from dotenv import load_dotenv
 import os
+import time
 
 from extensions import db, migrate
 from flask_jwt_extended import JWTManager
@@ -80,6 +81,26 @@ def create_app():
         @event.listens_for(engine, "checkin")
         def on_checkin(dbapi_connection, connection_record):
             print("DB POOL | Connection returned")
+
+        
+    @event.listens_for(engine, "before_cursor_execute")
+    def before_query(conn, cursor, statement, parameters, context, executemany):
+        conn.info.setdefault("query_start_times", []).append(
+            time.perf_counter()
+        )
+
+    @event.listens_for(engine, "after_cursor_execute")
+    def after_query(conn, cursor, statement, parameters, context, executemany):
+        started = conn.info["query_start_times"].pop()
+        elapsed_ms = (time.perf_counter() - started) * 1000
+
+        # Log the SQL operation, not its parameters.
+        operation = statement.lstrip().split(maxsplit=1)[0]
+        print(
+            f"SQL EXECUTION | Operation: {operation} | "
+            f"Time: {elapsed_ms:.2f} ms"
+        )
+
 
 
     # ======================
