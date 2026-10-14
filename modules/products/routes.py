@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+import time
 
 from .service import (
     create_product,
@@ -72,17 +73,27 @@ def create():
 
 
 
+
 # ---------------- GET ALL PRODUCTS ----------------
 
 @product_bp.route("/", methods=["GET"])
 def get_all():
 
+    # Start timing the entire Flask route
+    request_start = time.perf_counter()
+
     try:
+        # 1. Measure how long fetching products takes
+        db_start = time.perf_counter()
 
         products = get_products()
 
+        db_end = time.perf_counter()
 
-        return jsonify([
+        # 2. Measure JSON data preparation
+        serialize_start = time.perf_counter()
+
+        products_data = [
             {
                 "id": product.id,
                 "name": product.name,
@@ -93,17 +104,39 @@ def get_all():
                 "brand": product.brand,
                 "image_url": product.image_url
             }
-
             for product in products
-        ]), 200
+        ]
 
+        serialize_end = time.perf_counter()
 
-    except Exception:
+        # 3. Calculate the time taken in milliseconds
+        db_time = (db_end - db_start) * 1000
+
+        serialize_time = (
+            serialize_end - serialize_start
+        ) * 1000
+
+        total_time = (
+            serialize_end - request_start
+        ) * 1000
+
+        # 4. Print results in the Flask/Render logs
+        print(
+            f"PRODUCT TIMING | "
+            f"DB fetch: {db_time:.2f} ms | "
+            f"JSON preparation: {serialize_time:.2f} ms | "
+            f"Route total: {total_time:.2f} ms | "
+            f"Products: {len(products)}"
+        )
+
+        return jsonify(products_data), 200
+
+    except Exception as e:
+        print("GET PRODUCTS ERROR:", repr(e))
+
         return jsonify({
             "error": "Unable to fetch products"
         }), 500
-
-
 
 
 
