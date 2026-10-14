@@ -1,6 +1,8 @@
 from extensions import db
 from models.product import Product
 from models.orderItem import OrderItem
+import time
+from sqlalchemy import text
 
 
 def create_product(data):
@@ -20,10 +22,49 @@ def create_product(data):
     return product
 
 
+
 def get_products():
+    # Test 1: Get a database connection
+    start = time.perf_counter()
+
+    connection = db.engine.connect()
+
+    connection_ms = (
+        time.perf_counter() - start
+    ) * 1000
+
+    try:
+        # Test 2: Run a tiny SQL query
+        start = time.perf_counter()
+
+        connection.execute(text("SELECT 1"))
+
+        ping_ms = (
+            time.perf_counter() - start
+        ) * 1000
+
+    finally:
+        connection.close()
+
+    # Test 3: Fetch the actual products
+    start = time.perf_counter()
+
     products = Product.query.all()
 
+    fetch_ms = (
+        time.perf_counter() - start
+    ) * 1000
+
+    print(
+        f"DB DIAGNOSTIC | "
+        f"Connection: {connection_ms:.2f} ms | "
+        f"SELECT 1: {ping_ms:.2f} ms | "
+        f"Products query: {fetch_ms:.2f} ms | "
+        f"Count: {len(products)}"
+    )
+
     return products
+
 
 
 def get_product(product_id):
