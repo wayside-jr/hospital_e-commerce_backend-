@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify
 import time
+from flask_jwt_extended import jwt_required
+from modules.auth.utils import is_admin
+from .storage import upload_product_image
 
 from .service import (
     create_product,
@@ -16,6 +19,70 @@ product_bp = Blueprint(
     "product",
     __name__
 )
+
+
+# ---------------- UPLOAD PRODUCT IMAGE ----------------
+
+@product_bp.route("/upload-image", methods=["POST"])
+@jwt_required()
+def upload_image():
+    if not is_admin():
+        return jsonify({
+            "error": "Administrator access required"
+        }), 403
+
+    uploaded_file = request.files.get("image")
+
+    if not uploaded_file:
+        return jsonify({
+            "error": "No image file provided"
+        }), 400
+
+    if uploaded_file.mimetype not in {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+    }:
+        return jsonify({
+            "error": "Only JPEG, PNG, WebP, and GIF images are allowed"
+        }), 400
+
+    image_bytes = uploaded_file.read()
+
+    if not image_bytes:
+        return jsonify({
+            "error": "The uploaded image is empty"
+        }), 400
+
+    if len(image_bytes) > 5 * 1024 * 1024:
+        return jsonify({
+            "error": "Image must be smaller than 5 MB"
+        }), 400
+
+    try:
+        image_url = upload_product_image(
+            image_bytes,
+            uploaded_file.mimetype
+        )
+
+        return jsonify({
+            "message": "Image uploaded successfully",
+            "image_url": image_url
+        }), 201
+
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception as error:
+        print("PRODUCT IMAGE UPLOAD ERROR:", repr(error))
+
+        return jsonify({
+            "error": "Unable to upload product image"
+        }), 500
+
 
 
 # ---------------- CREATE PRODUCT ----------------
